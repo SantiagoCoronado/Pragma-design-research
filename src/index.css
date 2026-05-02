@@ -21,7 +21,7 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--brand-ink, var(--brand));
   outline-offset: 3px;
   border-radius: 2px;
 }

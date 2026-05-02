@@ -75,21 +75,24 @@ const PALETTES = [
   {
     id: 'graphite-signal',
     name: 'Graphite & Signal',
-    blurb: 'Technical · decisive · opinionated',
-    fonts: { display: FONT_STACKS.inter, body: FONT_STACKS.inter, mono: FONT_STACKS.mono },
+    blurb: 'Technical · decisive · signal-green',
+    fonts: { display: FONT_STACKS.mono, body: FONT_STACKS.mono, mono: FONT_STACKS.mono },
+    weights: { display: 800, body: 400, eyebrow: 500, button: 700 },
     light: {
       bg: '#F5F5F4', surface: '#FFFFFF', surfaceRaised: '#FFFFFF',
-      textPrimary: '#1C1917', textSecondary: '#57534E',
-      brand: '#18181B', accent: '#DB2777',
-      success: '#059669', warning: '#D97706', error: '#DC2626',
-      border: '#E4E4E7',
+      textPrimary: '#0E0F18', textSecondary: '#57534E',
+      brand: '#6EFF8C', brandInk: '#0F6B2A', onBrand: '#0E0F18',
+      accent: '#C9C9C5',
+      success: '#0F6B2A', warning: '#A8530A', error: '#B3261E',
+      border: '#E4E4E1',
     },
     dark: {
-      bg: '#0C0A09', surface: '#1C1917', surfaceRaised: '#292524',
-      textPrimary: '#FAFAF9', textSecondary: '#A8A29E',
-      brand: '#FAFAF9', accent: '#F472B6',
-      success: '#34D399', warning: '#FBBF24', error: '#F87171',
-      border: '#292524',
+      bg: '#0E0F18', surface: '#1C1D1F', surfaceRaised: '#26272A',
+      textPrimary: '#E6E6E4', textSecondary: '#9A9A97',
+      brand: '#6EFF8C', brandInk: '#6EFF8C', onBrand: '#0E0F18',
+      accent: '#3E4044',
+      success: '#6EFF8C', warning: '#FFB166', error: '#FF6B68',
+      border: '#2C2E31',
     },
   },
   {
@@ -261,8 +264,11 @@ const WRITING = [
 /*  Helpers                                                                   */
 /* -------------------------------------------------------------------------- */
 
+const DEFAULT_WEIGHTS = { display: 500, body: 400, eyebrow: 400, button: 500 };
+
 function applyTokensToRoot(palette, mode) {
   const tokens = palette[mode];
+  const weights = palette.weights ?? DEFAULT_WEIGHTS;
   const root = document.documentElement;
   root.style.setProperty('--bg', tokens.bg);
   root.style.setProperty('--surface', tokens.surface);
@@ -270,6 +276,8 @@ function applyTokensToRoot(palette, mode) {
   root.style.setProperty('--text-primary', tokens.textPrimary);
   root.style.setProperty('--text-secondary', tokens.textSecondary);
   root.style.setProperty('--brand', tokens.brand);
+  root.style.setProperty('--brand-ink', tokens.brandInk ?? tokens.brand);
+  root.style.setProperty('--on-brand', tokens.onBrand ?? tokens.surface);
   root.style.setProperty('--accent', tokens.accent);
   root.style.setProperty('--success', tokens.success);
   root.style.setProperty('--warning', tokens.warning);
@@ -278,6 +286,10 @@ function applyTokensToRoot(palette, mode) {
   root.style.setProperty('--font-display', palette.fonts.display);
   root.style.setProperty('--font-body', palette.fonts.body);
   root.style.setProperty('--font-mono', palette.fonts.mono);
+  root.style.setProperty('--fw-display', String(weights.display ?? DEFAULT_WEIGHTS.display));
+  root.style.setProperty('--fw-body', String(weights.body ?? DEFAULT_WEIGHTS.body));
+  root.style.setProperty('--fw-eyebrow', String(weights.eyebrow ?? DEFAULT_WEIGHTS.eyebrow));
+  root.style.setProperty('--fw-button', String(weights.button ?? DEFAULT_WEIGHTS.button));
   root.style.colorScheme = mode;
 }
 
@@ -332,7 +344,7 @@ function Wordmark({ small = false }) {
       }}
     >
       Pragma
-      <span style={{ color: 'var(--brand)' }}>.</span>
+      <span style={{ color: 'var(--brand-ink)' }}>.</span>
     </span>
   );
 }
@@ -362,7 +374,7 @@ export default function PragmaSite() {
         'family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700',
         'family=Inter:wght@300;400;500;600;700',
         'family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500',
-        'family=JetBrains+Mono:wght@400;500',
+        'family=JetBrains+Mono:wght@400;500;700;800',
       ].join('&') +
       '&display=swap';
     document.head.appendChild(link);
@@ -435,6 +447,7 @@ function ScopedStyles() {
       .mono { font-family: var(--font-mono); }
       .eyebrow {
         font-family: var(--font-mono);
+        font-weight: var(--fw-eyebrow, 400);
         font-size: 11px;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -455,28 +468,28 @@ function ScopedStyles() {
       }
       .card:hover {
         transform: translateY(-2px);
-        border-color: var(--brand);
+        border-color: var(--brand-ink);
       }
       .link {
         color: var(--text-primary);
         text-decoration: none;
         transition: color 200ms ease;
       }
-      .link:hover { color: var(--brand); }
+      .link:hover { color: var(--brand-ink); }
       .link-accent {
-        color: var(--brand);
+        color: var(--brand-ink);
         text-decoration: none;
-        border-bottom: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--brand-ink) 35%, transparent);
         transition: border-color 200ms ease;
       }
       .link-accent:hover {
-        border-bottom-color: var(--brand);
+        border-bottom-color: var(--brand-ink);
       }
       .btn-primary {
         background: var(--brand);
-        color: var(--surface);
+        color: var(--on-brand);
         font-family: var(--font-body);
-        font-weight: 500;
+        font-weight: var(--fw-button, 500);
         font-size: 14px;
         letter-spacing: 0.02em;
         padding: 14px 22px;
@@ -485,7 +498,7 @@ function ScopedStyles() {
         align-items: center;
         gap: 10px;
         cursor: pointer;
-        transition: transform 200ms ease, opacity 200ms ease;
+        transition: transform 200ms ease, opacity 200ms ease, background-color 200ms ease, border-color 200ms ease;
       }
       .btn-primary:hover { transform: translateY(-1px); opacity: 0.92; }
       .btn-ghost {
@@ -493,13 +506,13 @@ function ScopedStyles() {
         color: var(--text-primary);
         border: 1px solid var(--border);
         font-family: var(--font-body);
-        font-weight: 500;
+        font-weight: var(--fw-button, 500);
         font-size: 13px;
         padding: 10px 14px;
         cursor: pointer;
         transition: border-color 200ms ease, color 200ms ease;
       }
-      .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+      .btn-ghost:hover { border-color: var(--brand-ink); color: var(--brand-ink); }
       .input {
         background: transparent;
         border: none;
@@ -512,25 +525,25 @@ function ScopedStyles() {
         outline: none;
         transition: border-color 200ms ease;
       }
-      .input:focus { border-bottom-color: var(--brand); }
+      .input:focus { border-bottom-color: var(--brand-ink); }
       .input::placeholder { color: var(--text-secondary); opacity: 0.7; }
       .display-xl {
         font-family: var(--font-display);
-        font-weight: 500;
+        font-weight: var(--fw-display, 500);
         font-size: clamp(2.75rem, 7.2vw, 6.25rem);
         line-height: 0.98;
         letter-spacing: -0.02em;
       }
       .display-l {
         font-family: var(--font-display);
-        font-weight: 500;
+        font-weight: var(--fw-display, 500);
         font-size: clamp(2rem, 4.4vw, 3.5rem);
         line-height: 1.04;
         letter-spacing: -0.015em;
       }
       .display-m {
         font-family: var(--font-display);
-        font-weight: 500;
+        font-weight: var(--fw-display, 500);
         font-size: clamp(1.5rem, 2.6vw, 2.1rem);
         line-height: 1.1;
         letter-spacing: -0.01em;
@@ -571,7 +584,7 @@ function ScopedStyles() {
         text-decoration: none;
         position: relative;
       }
-      .nav-link:hover { color: var(--brand); }
+      .nav-link:hover { color: var(--brand-ink); }
       @media (prefers-reduced-motion: reduce) {
         * { transition: none !important; animation: none !important; }
       }
@@ -657,8 +670,8 @@ function Header({ mode, onToggleMode }) {
                 transition: 'border-color 200ms ease, color 200ms ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--brand)';
-                e.currentTarget.style.color = 'var(--brand)';
+                e.currentTarget.style.borderColor = 'var(--brand-ink)';
+                e.currentTarget.style.color = 'var(--brand-ink)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'var(--border)';
@@ -693,7 +706,7 @@ function Hero() {
             <h1 className="display-xl">
               Tailor-made technology,
               <br />
-              <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--brand)' }}>deeply</span>{' '}
+              <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--brand-ink)' }}>deeply</span>{' '}
               understood.
             </h1>
           </Reveal>
@@ -813,7 +826,7 @@ function SelectedWork() {
               </p>
               <div
                 className="mt-8 flex items-center gap-2 eyebrow"
-                style={{ color: 'var(--brand)' }}
+                style={{ color: 'var(--brand-ink)' }}
               >
                 Read the case <ArrowRight />
               </div>
@@ -979,7 +992,7 @@ function Writing() {
                   transition: 'background-color 250ms ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--brand) 4%, transparent)';
+                  e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--brand-ink) 4%, transparent)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -995,7 +1008,7 @@ function Writing() {
                   </p>
                 </div>
                 <div className="col-span-12 md:col-span-3 md:text-right secondary text-sm self-end mt-2 md:mt-0">
-                  <span style={{ color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: 'var(--brand-ink)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                     Read <ArrowRight />
                   </span>
                 </div>
@@ -1031,7 +1044,7 @@ function Contact() {
             <Reveal>
               <h2 className="display-xl max-w-[18ch]">
                 Tell us<br />what you are<br />
-                <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--brand)' }}>working on.</span>
+                <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--brand-ink)' }}>working on.</span>
               </h2>
             </Reveal>
             <Reveal>
@@ -1176,7 +1189,7 @@ function PaletteSwitcher({ palettes, activeIndex, mode, open, onToggle, onSelect
         >
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="eyebrow">Palettes · 5</div>
-            <div className="eyebrow" style={{ color: 'var(--brand)' }}>{mode}</div>
+            <div className="eyebrow" style={{ color: 'var(--brand-ink)' }}>{mode}</div>
           </div>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {palettes.map((p, i) => {
@@ -1194,7 +1207,7 @@ function PaletteSwitcher({ palettes, activeIndex, mode, open, onToggle, onSelect
                       gap: 12,
                       padding: '10px 10px',
                       background: isActive
-                        ? 'color-mix(in srgb, var(--brand) 8%, transparent)'
+                        ? 'color-mix(in srgb, var(--brand-ink) 10%, transparent)'
                         : 'transparent',
                       border: 'none',
                       borderRadius: 10,
@@ -1234,7 +1247,7 @@ function PaletteSwitcher({ palettes, activeIndex, mode, open, onToggle, onSelect
                         borderRadius: '50%',
                         border: '1px solid var(--border)',
                         background: isActive ? 'var(--brand)' : 'transparent',
-                        color: isActive ? 'var(--surface)' : 'transparent',
+                        color: isActive ? 'var(--on-brand)' : 'transparent',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',

@@ -41,9 +41,14 @@ Open `src/PragmaSite.jsx`, find the `PALETTES` array near the top of the file. E
 
 - `name`, `id`, `blurb`
 - `fonts` — `display`, `body`, `mono` (CSS font-family stacks)
-- `light` and `dark` — eleven token values each: `bg`, `surface`, `surfaceRaised`, `textPrimary`, `textSecondary`, `brand`, `accent`, `success`, `warning`, `error`, `border`
+- `weights` *(optional)* — `display`, `body`, `eyebrow`, `button`. Omit to use the defaults `{ 500, 400, 400, 500 }`.
+- `light` and `dark` — color tokens: `bg`, `surface`, `surfaceRaised`, `textPrimary`, `textSecondary`, `brand`, `accent`, `success`, `warning`, `error`, `border`. Optionally `brandInk` (text/icon version of brand — needed when `brand` is a fill-only color like neon) and `onBrand` (text/icon color on top of brand fills — needed when `brand` is too light for white text). Both default to `brand` and `surface` respectively.
 
-Hand the chosen entry to the developer. Every color in the rendered site comes from a CSS custom property (`--bg`, `--surface`, `--text-primary`, etc.) written at runtime, so production wiring is a one-pass mapping.
+Hand the chosen entry to the developer. Every color in the rendered site comes from a CSS custom property (`--bg`, `--surface`, `--text-primary`, `--brand`, `--brand-ink`, `--on-brand`, etc.) written at runtime, so production wiring is a one-pass mapping.
+
+### Note on Graphite & Signal
+
+The signal green `#6EFF8C` is fill-only in light mode (insufficient contrast as text on `#F5F5F4`). Green text, links, and icons use `--brand-ink` (`#0F6B2A` in light, `#6EFF8C` in dark). Text on top of green fills uses `--on-brand` (`#0E0F18` in both modes). The artifact already does this — the hand-off tokens just need to preserve the distinction.
 
 ## Constraints honored
 
