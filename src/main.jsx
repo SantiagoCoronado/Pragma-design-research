@@ -1,10 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import PragmaSite from './PragmaSite.jsx';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.jsx';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <PragmaSite />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>
 );

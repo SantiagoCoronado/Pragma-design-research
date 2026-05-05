@@ -11,27 +11,7 @@ const FONT_STACKS = {
   mono: '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace',
 };
 
-const PALETTES = [
-  {
-    id: 'atelier-warmth',
-    name: 'Atelier Warmth',
-    blurb: 'Editorial · warm · human-centered',
-    fonts: { display: FONT_STACKS.fraunces, body: FONT_STACKS.inter, mono: FONT_STACKS.mono },
-    light: {
-      bg: '#F7F4EC', surface: '#FFFFFF', surfaceRaised: '#FFFFFF',
-      textPrimary: '#141413', textSecondary: '#5C5852',
-      brand: '#A8451F', accent: '#7C5E3A',
-      success: '#3F6B2E', warning: '#B45309', error: '#B3261E',
-      border: '#E5DFD2',
-    },
-    dark: {
-      bg: '#1A1815', surface: '#24211D', surfaceRaised: '#2F2C27',
-      textPrimary: '#F2EEE4', textSecondary: '#A8A097',
-      brand: '#E89372', accent: '#C9A876',
-      success: '#7FB069', warning: '#E6B656', error: '#F0857F',
-      border: '#2F2C27',
-    },
-  },
+export const PALETTES = [
   {
     id: 'mono-indigo',
     name: 'Atelier Mono · Indigo',
@@ -93,26 +73,6 @@ const PALETTES = [
       accent: '#3E4044',
       success: '#6EFF8C', warning: '#FFB166', error: '#FF6B68',
       border: '#2C2E31',
-    },
-  },
-  {
-    id: 'heritage-claret',
-    name: 'Heritage Claret',
-    blurb: 'Confident · editorial · literary',
-    fonts: { display: FONT_STACKS.playfair, body: FONT_STACKS.inter, mono: FONT_STACKS.mono },
-    light: {
-      bg: '#F4EFEA', surface: '#FFFFFF', surfaceRaised: '#FFFFFF',
-      textPrimary: '#1A1414', textSecondary: '#5C5050',
-      brand: '#6B1F2E', accent: '#B8895C',
-      success: '#3F6B2E', warning: '#B8762E', error: '#A11D1D',
-      border: '#E5DCD2',
-    },
-    dark: {
-      bg: '#1A1212', surface: '#251A1A', surfaceRaised: '#2E2424',
-      textPrimary: '#F2EBE3', textSecondary: '#A89B91',
-      brand: '#C97A88', accent: '#D4B58A',
-      success: '#7FB069', warning: '#E6B656', error: '#F08585',
-      border: '#2E2424',
     },
   },
 ];
@@ -353,10 +313,13 @@ function Wordmark({ small = false }) {
 /*  Main component                                                            */
 /* -------------------------------------------------------------------------- */
 
-export default function PragmaSite() {
-  const [paletteIndex, setPaletteIndex] = useState(0);
-  const [mode, setMode] = useState('light');
-  const userOverrodeMode = useRef(false);
+export default function PragmaSite({ lockedPaletteId, initialMode, showSwitcher = false }) {
+  const lockedIndex = lockedPaletteId
+    ? PALETTES.findIndex((p) => p.id === lockedPaletteId)
+    : -1;
+  const [paletteIndex, setPaletteIndex] = useState(lockedIndex >= 0 ? lockedIndex : 0);
+  const [mode, setMode] = useState(initialMode === 'dark' || initialMode === 'light' ? initialMode : 'light');
+  const userOverrodeMode = useRef(initialMode === 'dark' || initialMode === 'light');
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const palette = PALETTES[paletteIndex];
@@ -381,10 +344,12 @@ export default function PragmaSite() {
   }, []);
 
   // Initial mode from prefers-color-scheme + subscribe to changes.
+  // When initialMode is provided, treat that as a manual override (the
+  // /preview route uses ?mode=light|dark to lock the preview to that mode).
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    setMode(mq.matches ? 'dark' : 'light');
+    if (!userOverrodeMode.current) setMode(mq.matches ? 'dark' : 'light');
     const onChange = (e) => {
       if (!userOverrodeMode.current) setMode(e.matches ? 'dark' : 'light');
     };
@@ -413,7 +378,7 @@ export default function PragmaSite() {
       }}
     >
       <ScopedStyles />
-      <Header mode={mode} onToggleMode={toggleMode} />
+      <Header mode={mode} onToggleMode={toggleMode} locked={Boolean(lockedPaletteId)} />
       <main>
         <Hero />
         <Approach />
@@ -424,14 +389,16 @@ export default function PragmaSite() {
         <Contact />
       </main>
       <Footer />
-      <PaletteSwitcher
-        palettes={PALETTES}
-        activeIndex={paletteIndex}
-        mode={mode}
-        open={paletteOpen}
-        onToggle={() => setPaletteOpen((v) => !v)}
-        onSelect={(i) => setPaletteIndex(i)}
-      />
+      {showSwitcher && (
+        <PaletteSwitcher
+          palettes={PALETTES}
+          activeIndex={paletteIndex}
+          mode={mode}
+          open={paletteOpen}
+          onToggle={() => setPaletteOpen((v) => !v)}
+          onSelect={(i) => setPaletteIndex(i)}
+        />
+      )}
     </div>
   );
 }
@@ -626,7 +593,7 @@ function Reveal({ children, as: Tag = 'div', className = '', ...rest }) {
 /*  Header                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function Header({ mode, onToggleMode }) {
+function Header({ mode, onToggleMode, locked = false }) {
   return (
     <header
       style={{
@@ -652,10 +619,28 @@ function Header({ mode, onToggleMode }) {
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            {locked && (
+              <a
+                href="/"
+                className="nav-link"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border)',
+                  padding: '7px 12px',
+                  borderRadius: 999,
+                }}
+              >
+                ← Volver al ranking
+              </a>
+            )}
             <button
               type="button"
               onClick={onToggleMode}
-              aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               style={{
                 background: 'transparent',
                 border: '1px solid var(--border)',
