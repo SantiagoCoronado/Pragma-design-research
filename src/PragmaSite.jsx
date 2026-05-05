@@ -313,7 +313,7 @@ function Wordmark({ small = false }) {
 /*  Main component                                                            */
 /* -------------------------------------------------------------------------- */
 
-export default function PragmaSite({ lockedPaletteId, initialMode, showSwitcher = false }) {
+export default function PragmaSite({ lockedPaletteId, initialMode, showSwitcher = false, onModeChange }) {
   const lockedIndex = lockedPaletteId
     ? PALETTES.findIndex((p) => p.id === lockedPaletteId)
     : -1;
@@ -361,6 +361,12 @@ export default function PragmaSite({ lockedPaletteId, initialMode, showSwitcher 
   useEffect(() => {
     applyTokensToRoot(palette, mode);
   }, [palette, mode]);
+
+  // Notify parent of mode changes (used by /preview to record what
+  // mode each design was viewed in for analytics).
+  useEffect(() => {
+    onModeChange?.(mode);
+  }, [mode, onModeChange]);
 
   const toggleMode = () => {
     userOverrodeMode.current = true;

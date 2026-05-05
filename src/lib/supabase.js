@@ -5,12 +5,18 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = url && anonKey ? createClient(url, anonKey) : null;
 
-export async function insertVote(ranks) {
+export async function insertVote({ ranks, prefersDark, previewModes }) {
   if (!supabase) {
     throw new Error('Supabase no está configurado. Falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY.');
   }
-  const { error } = await supabase
-    .from('votes')
-    .insert({ ranks, user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null });
+  const payload = {
+    ranks,
+    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+  };
+  if (typeof prefersDark === 'boolean') payload.prefers_dark = prefersDark;
+  if (previewModes && typeof previewModes === 'object' && Object.keys(previewModes).length > 0) {
+    payload.preview_modes = previewModes;
+  }
+  const { error } = await supabase.from('votes').insert(payload);
   if (error) throw error;
 }

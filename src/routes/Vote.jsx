@@ -8,6 +8,32 @@ const PAGE_FONT = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
 const MONO_FONT = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 
 const RANKS_STORAGE_KEY = 'pragma-design-vote-ranks-v1';
+const PREVIEW_MODES_STORAGE_KEY = 'pragma-design-vote-preview-modes-v1';
+
+function readPreviewModes() {
+  try {
+    const raw = localStorage.getItem(PREVIEW_MODES_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const validIds = new Set(PALETTES.map((p) => p.id));
+    const out = {};
+    for (const [id, mode] of Object.entries(parsed)) {
+      if (validIds.has(id) && (mode === 'light' || mode === 'dark')) out[id] = mode;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function readOsPrefersDark() {
+  try {
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  } catch {
+    return false;
+  }
+}
 
 function isValidRanks(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -109,8 +135,13 @@ export default function Vote() {
     setSubmitting(true);
     setError(null);
     try {
-      await insertVote(ranks);
+      await insertVote({
+        ranks,
+        prefersDark: readOsPrefersDark(),
+        previewModes: readPreviewModes(),
+      });
       try { localStorage.removeItem(RANKS_STORAGE_KEY); } catch {}
+      try { localStorage.removeItem(PREVIEW_MODES_STORAGE_KEY); } catch {}
       navigate('/thanks');
     } catch (err) {
       console.error(err);
