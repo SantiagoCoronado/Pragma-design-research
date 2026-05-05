@@ -1,18 +1,24 @@
 # Pragma — Design Research
 
-A single-page marketing site for **Pragma**, a boutique tech consulting agency, built as a design-research artifact. Five color palettes (each with light and dark variants) and matching typography pairings can be cycled through in a real layout — so the winning combination can be picked in context, not from a swatch grid.
+A single-page marketing site for **Pragma**, a boutique tech consulting agency, built as a design-research artifact. Three finalist palettes (each with light and dark variants) and matching typography pairings can be cycled through in a real layout — so the winning combination can be picked in context, not from a swatch grid.
+
+The repo also ships a **public voting site** (Spanish) that lets friends, family, and colleagues rank the three finalists 1–3, with responses persisted to Supabase.
 
 ## What's here
 
 ```
-src/PragmaSite.jsx     ← the artifact: one self-contained component, default export
-src/main.jsx           ← Vite entry, mounts <PragmaSite />
+src/PragmaSite.jsx     ← the artifact: marketing site, used by the /preview route
+src/App.jsx            ← router: /, /preview/:paletteId, /thanks
+src/routes/Vote.jsx    ← public ranking screen (Spanish)
+src/routes/Preview.jsx ← renders PragmaSite locked to one palette + mode
+src/routes/Thanks.jsx  ← post-submit confirmation
+src/lib/supabase.js    ← Supabase client + insertVote()
+src/main.jsx           ← Vite entry, mounts <App /> in <BrowserRouter />
 src/index.css          ← Tailwind import + base resets
-index.html             ← HTML shell, fonts preconnect
-vite.config.js         ← React + Tailwind v4 plugins
+vercel.json            ← SPA rewrite so /preview/... deep links work in prod
 ```
 
-`src/PragmaSite.jsx` is the deliverable. The rest is scaffolding so it runs locally.
+`src/PragmaSite.jsx` is still the design deliverable; the rest is the voting wrapper around it.
 
 ## Run it
 
@@ -28,12 +34,51 @@ npm run build      # production build to dist/
 npm run preview    # preview the production build
 ```
 
-## How to evaluate
+## Voting site
 
-- **Light/dark toggle** — top-right of the header. First load follows your OS `prefers-color-scheme`; once you click, your choice wins.
-- **Palette switcher** — floating pill, bottom-right. Click to expand. Each palette shows three swatches (background · brand · accent) and a one-line character description. Switching swaps both the colors and the typography pairing.
+The voting flow is in Spanish and lives at `/`. Each card has `Ver en claro` and `Ver en oscuro` buttons that open `/preview/:paletteId?mode=light|dark` in a new tab — the full marketing site rendered in that palette and mode. After ranking the three designs, `Enviar →` posts to Supabase and routes to `/thanks`.
 
-Cycle through all 5 palettes in both light and dark modes. The differences should be immediately legible in the hero, the work cards, and the contact section — those are the moments where the brand color and display typeface do the most work.
+### One-time Supabase setup
+
+1. Create a Supabase project (free tier is plenty).
+2. In the SQL editor, run:
+   ```sql
+   create table votes (
+     id uuid primary key default gen_random_uuid(),
+     created_at timestamptz default now(),
+     ranks jsonb not null,
+     user_agent text
+   );
+   alter table votes enable row level security;
+   create policy "anon can insert" on votes
+     for insert to anon with check (true);
+   ```
+   No `select` policy is created on purpose — the anon key can write but cannot read votes back.
+3. Copy the project URL and the **anon / public** API key into `.env.local`:
+   ```
+   VITE_SUPABASE_URL=https://xxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
+   ```
+4. To inspect results later, in the Supabase SQL editor:
+   ```sql
+   select
+     key as palette,
+     avg((value)::int)::numeric(3,2) as avg_rank,
+     count(*) as n
+   from votes, jsonb_each_text(ranks)
+   group by key order by avg_rank;
+   ```
+
+### Deploy
+
+`vercel.json` already rewrites all paths to `/` so React Router handles them. On Vercel, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the project's environment variables and deploy.
+
+## How to evaluate the designs (internal)
+
+- **Light/dark toggle** — top-right of the header on `/preview/:paletteId`. The query `?mode=light|dark` locks the initial mode; the toggle still flips it after.
+- **Palette switcher** — hidden by default. To see all three palettes inline during internal review, render `<PragmaSite showSwitcher />` directly.
+
+Cycle through the three palettes in both light and dark modes. The differences should be immediately legible in the hero, the work cards, and the contact section — those are the moments where the brand color and display typeface do the most work.
 
 ## How to hand off the chosen palette
 
