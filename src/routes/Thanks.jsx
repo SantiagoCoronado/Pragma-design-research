@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { getTheme, useColorScheme } from '../lib/useColorScheme.js';
 
 export default function Thanks() {
@@ -55,28 +54,8 @@ export default function Thanks() {
           ¡Gracias! Tu ranking quedó registrado.
         </h1>
         <p style={{ marginTop: 16, color: t.textSecondary, lineHeight: 1.55, fontSize: 15 }}>
-          Tu voto nos ayuda a elegir la dirección visual de Pragma. Si quieres revisarlo, puedes volver al ranking.
+          Tu voto nos ayuda a elegir la dirección visual de Pragma.
         </p>
-        <div style={{ marginTop: 28 }}>
-          <Link
-            to="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '12px 18px',
-              background: t.ctaBg,
-              color: t.ctaText,
-              borderRadius: 999,
-              fontSize: 14,
-              fontWeight: 500,
-              textDecoration: 'none',
-              letterSpacing: '0.02em',
-            }}
-          >
-            ← Volver
-          </Link>
-        </div>
       </div>
     </div>
   );
