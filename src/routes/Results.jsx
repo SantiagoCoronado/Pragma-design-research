@@ -23,11 +23,13 @@ const PAGE_FONT = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
 const MONO_FONT = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 const UNLOCK_KEY = 'pragma:results:unlocked';
 
-function paletteColor(p) {
-  return p.light.brand;
+function paletteFill(p, scheme) {
+  const variant = p[scheme] ?? p.light;
+  return variant.brand;
 }
-function paletteInk(p) {
-  return p.light.brandInk ?? p.light.brand;
+function paletteInk(p, scheme) {
+  const variant = p[scheme] ?? p.light;
+  return variant.brandInk ?? variant.brand;
 }
 function paletteName(id) {
   const p = PALETTES.find((x) => x.id === id);
@@ -503,7 +505,7 @@ function DashboardContent({ votes, t, scheme }) {
         t={t}
         items={[
           { label: 'Votos totales', value: String(totalVotes) },
-          { label: 'Líder', value: shortName(winner.id), accent: paletteInk(winner) },
+          { label: 'Líder', value: shortName(winner.id), accent: paletteInk(winner, scheme) },
           { label: 'Modo oscuro (OS)', value: `${darkPct}%` },
           { label: 'Último voto', value: latestVote ? formatDate(latestVote) : '—', small: true },
         ]}
@@ -514,7 +516,7 @@ function DashboardContent({ votes, t, scheme }) {
         title="Podio"
         subtitle="Orden por ranking promedio (menor = mejor)."
       >
-        <Podium ordered={ordered} summary={summary} t={t} totalVotes={totalVotes} />
+        <Podium ordered={ordered} summary={summary} t={t} scheme={scheme} totalVotes={totalVotes} />
       </Section>
 
       <Section
@@ -527,7 +529,7 @@ function DashboardContent({ votes, t, scheme }) {
             data={PALETTES.map((p) => ({
               name: shortName(p.id),
               avg: Number((summary[p.id]?.avgRank || 0).toFixed(2)),
-              fill: paletteColor(p),
+              fill: paletteFill(p, scheme),
             }))}
             layout="vertical"
             margin={{ top: 10, right: 24, bottom: 10, left: 16 }}
@@ -550,11 +552,13 @@ function DashboardContent({ votes, t, scheme }) {
             <Tooltip
               cursor={{ fill: t.borderSubtle }}
               contentStyle={tooltipStyle(t)}
+              itemStyle={{ color: t.textPrimary }}
+              labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
               formatter={(v) => [v, 'Promedio']}
             />
             <Bar dataKey="avg" radius={[0, 6, 6, 0]}>
               {PALETTES.map((p) => (
-                <Cell key={p.id} fill={paletteColor(p)} />
+                <Cell key={p.id} fill={paletteFill(p, scheme)} />
               ))}
             </Bar>
           </BarChart>
@@ -580,13 +584,18 @@ function DashboardContent({ votes, t, scheme }) {
             <CartesianGrid stroke={t.borderSubtle} vertical={false} />
             <XAxis dataKey="rank" tick={{ fill: t.textSecondary, fontSize: 12 }} stroke={t.border} />
             <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
-            <Tooltip cursor={{ fill: t.borderSubtle }} contentStyle={tooltipStyle(t)} />
+            <Tooltip
+              cursor={{ fill: t.borderSubtle }}
+              contentStyle={tooltipStyle(t)}
+              itemStyle={{ color: t.textPrimary }}
+              labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+            />
             <Legend wrapperStyle={{ fontSize: 12, color: t.textSecondary }} />
             {PALETTES.map((p) => (
               <Bar
                 key={p.id}
                 dataKey={shortName(p.id)}
-                fill={paletteColor(p)}
+                fill={paletteFill(p, scheme)}
                 radius={[6, 6, 0, 0]}
               />
             ))}
@@ -618,16 +627,20 @@ function DashboardContent({ votes, t, scheme }) {
                 cx="50%"
                 cy="50%"
                 outerRadius={90}
-                label={({ name, value }) =>
-                  totalVotes ? `${name}: ${Math.round((value / totalVotes) * 100)}%` : name
+                label={(props) =>
+                  renderPieLabel(props, t, totalVotes ? `${Math.round((props.value / totalVotes) * 100)}%` : null)
                 }
-                labelLine={false}
+                labelLine={{ stroke: t.textMuted }}
               >
                 {PALETTES.map((p) => (
-                  <Cell key={p.id} fill={paletteColor(p)} stroke={t.surface} strokeWidth={2} />
+                  <Cell key={p.id} fill={paletteFill(p, scheme)} stroke={t.surface} strokeWidth={2} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle(t)} />
+              <Tooltip
+                contentStyle={tooltipStyle(t)}
+                itemStyle={{ color: t.textPrimary }}
+                labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+              />
             </PieChart>
           </ChartFrame>
         </Section>
@@ -648,10 +661,16 @@ function DashboardContent({ votes, t, scheme }) {
               <CartesianGrid stroke={t.borderSubtle} vertical={false} />
               <XAxis dataKey="name" tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
               <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
-              <Tooltip cursor={{ fill: t.borderSubtle }} contentStyle={tooltipStyle(t)} formatter={(v) => [v, 'Puntos']} />
+              <Tooltip
+                cursor={{ fill: t.borderSubtle }}
+                contentStyle={tooltipStyle(t)}
+                itemStyle={{ color: t.textPrimary }}
+                labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+                formatter={(v) => [v, 'Puntos']}
+              />
               <Bar dataKey="points" radius={[6, 6, 0, 0]}>
                 {PALETTES.map((p) => (
-                  <Cell key={p.id} fill={paletteColor(p)} />
+                  <Cell key={p.id} fill={paletteFill(p, scheme)} />
                 ))}
               </Bar>
             </BarChart>
@@ -675,28 +694,32 @@ function DashboardContent({ votes, t, scheme }) {
             <PieChart>
               <Pie
                 data={[
-                  { name: 'Oscuro', value: dark.dark, color: scheme === 'dark' ? '#FAFAFA' : '#0E0E0E' },
-                  { name: 'Claro', value: dark.light, color: scheme === 'dark' ? '#52525B' : '#D4D4D4' },
-                  { name: 'Desconocido', value: dark.unknown, color: t.borderSubtle },
+                  { name: 'Oscuro', value: dark.dark },
+                  { name: 'Claro', value: dark.light },
+                  { name: 'Desconocido', value: dark.unknown },
                 ]}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={({ name, value }) => `${name}: ${value}`}
-                labelLine={false}
+                label={(props) => renderPieLabel(props, t, String(props.value))}
+                labelLine={{ stroke: t.textMuted }}
               >
                 {[dark.dark, dark.light, dark.unknown].map((_, i) => {
                   const colors = [
                     scheme === 'dark' ? '#FAFAFA' : '#0E0E0E',
-                    scheme === 'dark' ? '#52525B' : '#D4D4D4',
-                    t.borderSubtle,
+                    scheme === 'dark' ? '#A1A1AA' : '#A1A1AA',
+                    scheme === 'dark' ? '#3F3F46' : '#E5E5E5',
                   ];
                   return <Cell key={i} fill={colors[i]} stroke={t.surface} strokeWidth={2} />;
                 })}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle(t)} />
+              <Tooltip
+                contentStyle={tooltipStyle(t)}
+                itemStyle={{ color: t.textPrimary }}
+                labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+              />
             </PieChart>
           </ChartFrame>
         </Section>
@@ -718,9 +741,14 @@ function DashboardContent({ votes, t, scheme }) {
               <CartesianGrid stroke={t.borderSubtle} vertical={false} />
               <XAxis dataKey="name" tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
               <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
-              <Tooltip cursor={{ fill: t.borderSubtle }} contentStyle={tooltipStyle(t)} />
+              <Tooltip
+                cursor={{ fill: t.borderSubtle }}
+                contentStyle={tooltipStyle(t)}
+                itemStyle={{ color: t.textPrimary }}
+                labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+              />
               <Legend wrapperStyle={{ fontSize: 12, color: t.textSecondary }} />
-              <Bar dataKey="Claro" stackId="m" fill={scheme === 'dark' ? '#A1A1AA' : '#D4D4D4'} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="Claro" stackId="m" fill="#A1A1AA" radius={[0, 0, 0, 0]} />
               <Bar dataKey="Oscuro" stackId="m" fill={scheme === 'dark' ? '#FAFAFA' : '#0E0E0E'} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ChartFrame>
@@ -742,13 +770,18 @@ function DashboardContent({ votes, t, scheme }) {
               minTickGap={32}
             />
             <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
-            <Tooltip contentStyle={tooltipStyle(t)} formatter={(v) => [v, 'Acumulado']} />
+            <Tooltip
+              contentStyle={tooltipStyle(t)}
+              itemStyle={{ color: t.textPrimary }}
+              labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+              formatter={(v) => [v, 'Acumulado']}
+            />
             <Line
               type="monotone"
               dataKey="total"
-              stroke={paletteInk(winner)}
+              stroke={paletteInk(winner, scheme)}
               strokeWidth={2}
-              dot={{ r: 2.5, fill: paletteInk(winner) }}
+              dot={{ r: 2.5, fill: paletteInk(winner, scheme) }}
               activeDot={{ r: 4 }}
             />
           </LineChart>
@@ -756,7 +789,7 @@ function DashboardContent({ votes, t, scheme }) {
       </Section>
 
       <Section t={t} title="Votos recientes" subtitle="Los últimos 10 votos registrados.">
-        <RecentVotesTable votes={votes} t={t} />
+        <RecentVotesTable votes={votes} t={t} scheme={scheme} />
       </Section>
     </div>
   );
@@ -872,7 +905,30 @@ function tooltipStyle(t) {
   };
 }
 
-function Podium({ ordered, summary, t, totalVotes }) {
+function renderPieLabel(props, t, valueLabel) {
+  const { cx, cy, midAngle, outerRadius, name, value } = props;
+  if (!value) return null;
+  const RAD = Math.PI / 180;
+  const radius = outerRadius + 14;
+  const x = cx + radius * Math.cos(-midAngle * RAD);
+  const y = cy + radius * Math.sin(-midAngle * RAD);
+  const anchor = x > cx ? 'start' : 'end';
+  const text = valueLabel != null ? `${name}: ${valueLabel}` : name;
+  return (
+    <text
+      x={x}
+      y={y}
+      fill={t.textPrimary}
+      fontSize={11}
+      textAnchor={anchor}
+      dominantBaseline="central"
+    >
+      {text}
+    </text>
+  );
+}
+
+function Podium({ ordered, summary, t, scheme, totalVotes }) {
   return (
     <div
       style={{
@@ -884,11 +940,13 @@ function Podium({ ordered, summary, t, totalVotes }) {
       {ordered.map((p, idx) => {
         const s = summary[p.id] ?? {};
         const pct = totalVotes ? Math.round(((s.firstPlace ?? 0) / totalVotes) * 100) : 0;
+        const ink = paletteInk(p, scheme);
+        const fill = paletteFill(p, scheme);
         return (
           <div
             key={p.id}
             style={{
-              border: `1px solid ${idx === 0 ? paletteInk(p) : t.border}`,
+              border: `1px solid ${idx === 0 ? ink : t.border}`,
               borderRadius: 12,
               padding: 14,
               background: t.bg,
@@ -901,7 +959,7 @@ function Podium({ ordered, summary, t, totalVotes }) {
                 fontSize: 11,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: idx === 0 ? paletteInk(p) : t.textSecondary,
+                color: idx === 0 ? ink : t.textSecondary,
                 marginBottom: 6,
               }}
             >
@@ -922,7 +980,7 @@ function Podium({ ordered, summary, t, totalVotes }) {
                   width: 14,
                   height: 14,
                   borderRadius: 4,
-                  background: paletteColor(p),
+                  background: fill,
                   boxShadow: `inset 0 0 0 1px ${t.swatchInset}`,
                 }}
               />
@@ -962,7 +1020,7 @@ function Stat({ label, value, t }) {
   );
 }
 
-function RecentVotesTable({ votes, t }) {
+function RecentVotesTable({ votes, t, scheme }) {
   const recent = useMemo(() => {
     const sorted = [...votes].sort((a, b) => {
       const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -1000,9 +1058,9 @@ function RecentVotesTable({ votes, t }) {
             return (
               <tr key={v.id} style={{ borderTop: `1px solid ${t.borderSubtle}` }}>
                 <Td t={t} mono>{formatDate(v.created_at)}</Td>
-                <Td t={t}><Pill id={first} t={t} /></Td>
-                <Td t={t}><Pill id={second} t={t} /></Td>
-                <Td t={t}><Pill id={third} t={t} /></Td>
+                <Td t={t}><Pill id={first} t={t} scheme={scheme} /></Td>
+                <Td t={t}><Pill id={second} t={t} scheme={scheme} /></Td>
+                <Td t={t}><Pill id={third} t={t} scheme={scheme} /></Td>
                 <Td t={t} mono>{v.prefers_dark === true ? 'oscuro' : v.prefers_dark === false ? 'claro' : '—'}</Td>
               </tr>
             );
@@ -1047,7 +1105,7 @@ function Td({ children, t, mono }) {
   );
 }
 
-function Pill({ id, t }) {
+function Pill({ id, t, scheme }) {
   if (!id) return <span style={{ color: t.textMuted }}>—</span>;
   const p = PALETTES.find((x) => x.id === id);
   return (
@@ -1061,6 +1119,7 @@ function Pill({ id, t }) {
         borderRadius: 999,
         padding: '3px 9px',
         fontSize: 12,
+        color: t.textPrimary,
       }}
     >
       <span
@@ -1069,7 +1128,7 @@ function Pill({ id, t }) {
           width: 8,
           height: 8,
           borderRadius: 2,
-          background: p ? paletteColor(p) : t.textMuted,
+          background: p ? paletteFill(p, scheme) : t.textMuted,
         }}
       />
       {shortName(id)}
