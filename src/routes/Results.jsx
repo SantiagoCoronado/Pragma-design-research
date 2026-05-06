@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bar,
@@ -624,60 +624,30 @@ function DashboardContent({ votes, t, scheme }) {
         </ChartFrame>
       </Section>
 
-      <Section
-        t={t}
-        title="Distribución por modo (SO)"
-        subtitle={
-          (totalVotes - dark.dark - dark.light) > 0
-            ? `Cómo votaron quienes usan SO claro vs. oscuro. ${
-                totalVotes - dark.dark - dark.light
-              } voto(s) sin dato de SO se omiten.`
-            : 'Cómo votaron quienes usan SO claro vs. oscuro.'
-        }
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 20,
+        }}
       >
-        <ChartFrame t={t} height={320}>
-          <BarChart
-            data={[1, 2, 3].map((rank) => {
-              const row = { rank: `Posición ${rank}` };
-              for (const p of PALETTES) {
-                row[`${shortName(p.id)} · claro`] = distOs[p.id]?.light[rank] ?? 0;
-                row[`${shortName(p.id)} · oscuro`] = distOs[p.id]?.dark[rank] ?? 0;
-              }
-              return row;
-            })}
-            margin={{ top: 10, right: 16, bottom: 10, left: 8 }}
-          >
-            <CartesianGrid stroke={t.borderSubtle} vertical={false} />
-            <XAxis dataKey="rank" tick={{ fill: t.textSecondary, fontSize: 12 }} stroke={t.border} />
-            <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
-            <Tooltip
-              cursor={{ fill: t.borderSubtle }}
-              contentStyle={tooltipStyle(t)}
-              itemStyle={{ color: t.textPrimary }}
-              labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
-            />
-            <Legend content={<ModeLegend t={t} />} />
-            {PALETTES.map((p) => (
-              <Fragment key={p.id}>
-                <Bar
-                  dataKey={`${shortName(p.id)} · claro`}
-                  fill={paletteFill(p, scheme)}
-                  fillOpacity={0.45}
-                  stroke={paletteFill(p, scheme)}
-                  strokeWidth={1}
-                  radius={[6, 6, 0, 0]}
-                />
-                <Bar
-                  dataKey={`${shortName(p.id)} · oscuro`}
-                  fill={paletteFill(p, scheme)}
-                  fillOpacity={1}
-                  radius={[6, 6, 0, 0]}
-                />
-              </Fragment>
-            ))}
-          </BarChart>
-        </ChartFrame>
-      </Section>
+        <OsModeDistributionChart
+          t={t}
+          scheme={scheme}
+          distOs={distOs}
+          bucket="light"
+          title="Distribución · SO claro"
+          voterCount={dark.light}
+        />
+        <OsModeDistributionChart
+          t={t}
+          scheme={scheme}
+          distOs={distOs}
+          bucket="dark"
+          title="Distribución · SO oscuro"
+          voterCount={dark.dark}
+        />
+      </div>
 
       <div
         style={{
@@ -970,6 +940,48 @@ function ChartFrame({ height, children }) {
   );
 }
 
+function OsModeDistributionChart({ t, scheme, distOs, bucket, title, voterCount }) {
+  return (
+    <Section
+      t={t}
+      title={title}
+      subtitle={`${voterCount} votante(s) con SO ${bucket === 'light' ? 'claro' : 'oscuro'}.`}
+    >
+      <ChartFrame t={t} height={280}>
+        <BarChart
+          data={[1, 2, 3].map((rank) => {
+            const row = { rank: `Posición ${rank}` };
+            for (const p of PALETTES) {
+              row[shortName(p.id)] = distOs[p.id]?.[bucket][rank] ?? 0;
+            }
+            return row;
+          })}
+          margin={{ top: 10, right: 16, bottom: 10, left: 8 }}
+        >
+          <CartesianGrid stroke={t.borderSubtle} vertical={false} />
+          <XAxis dataKey="rank" tick={{ fill: t.textSecondary, fontSize: 12 }} stroke={t.border} />
+          <YAxis allowDecimals={false} tick={{ fill: t.textSecondary, fontSize: 11 }} stroke={t.border} />
+          <Tooltip
+            cursor={{ fill: t.borderSubtle }}
+            contentStyle={tooltipStyle(t)}
+            itemStyle={{ color: t.textPrimary }}
+            labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12, color: t.textSecondary }} />
+          {PALETTES.map((p) => (
+            <Bar
+              key={p.id}
+              dataKey={shortName(p.id)}
+              fill={paletteFill(p, scheme)}
+              radius={[6, 6, 0, 0]}
+            />
+          ))}
+        </BarChart>
+      </ChartFrame>
+    </Section>
+  );
+}
+
 function tooltipStyle(t) {
   return {
     background: t.surface,
@@ -979,43 +991,6 @@ function tooltipStyle(t) {
     color: t.textPrimary,
     boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
   };
-}
-
-function ModeLegend({ t }) {
-  const item = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    fontFamily: MONO_FONT,
-    fontSize: 11,
-    letterSpacing: '0.04em',
-    color: t.textSecondary,
-  };
-  const swatch = {
-    width: 14,
-    height: 10,
-    borderRadius: 2,
-    background: t.textPrimary,
-    display: 'inline-block',
-  };
-  return (
-    <div style={{ display: 'flex', gap: 18, justifyContent: 'center', paddingTop: 8 }}>
-      <span style={item}>
-        <span
-          style={{
-            ...swatch,
-            opacity: 0.45,
-            border: `1px solid ${t.textPrimary}`,
-          }}
-        />
-        SO claro
-      </span>
-      <span style={item}>
-        <span style={swatch} />
-        SO oscuro
-      </span>
-    </div>
-  );
 }
 
 function renderPieLabel(props, t, valueLabel) {
