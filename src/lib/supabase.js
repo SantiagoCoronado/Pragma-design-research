@@ -20,3 +20,15 @@ export async function insertVote({ ranks, prefersDark, previewModes }) {
   const { error } = await supabase.from('votes').insert(payload);
   if (error) throw error;
 }
+
+export async function fetchVotes() {
+  if (!supabase) {
+    throw new Error('Supabase no está configurado. Falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY.');
+  }
+  const { data, error } = await supabase
+    .from('votes')
+    .select('id, created_at, ranks, prefers_dark, preview_modes, user_agent')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}

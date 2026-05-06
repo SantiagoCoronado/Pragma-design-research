@@ -8,11 +8,12 @@ The repo also ships a **public voting site** (Spanish) that lets friends, family
 
 ```
 src/PragmaSite.jsx     ← the artifact: marketing site, used by the /preview route
-src/App.jsx            ← router: /, /preview/:paletteId, /thanks
+src/App.jsx            ← router: /, /preview/:paletteId, /thanks, /results
 src/routes/Vote.jsx    ← public ranking screen (Spanish)
 src/routes/Preview.jsx ← renders PragmaSite locked to one palette + mode
 src/routes/Thanks.jsx  ← post-submit confirmation
-src/lib/supabase.js    ← Supabase client + insertVote()
+src/routes/Results.jsx ← passphrase-gated results dashboard (Recharts)
+src/lib/supabase.js    ← Supabase client + insertVote() + fetchVotes()
 src/main.jsx           ← Vite entry, mounts <App /> in <BrowserRouter />
 src/index.css          ← Tailwind import + base resets
 vercel.json            ← SPA rewrite so /preview/... deep links work in prod
@@ -69,9 +70,28 @@ The voting flow is in Spanish and lives at `/`. Each card has `Ver en claro` and
    group by key order by avg_rank;
    ```
 
+### `/results` — visual dashboard
+
+Visit `/results` (e.g. `https://pragma-design-research.vercel.app/results`) for an in-app dashboard with Recharts: podium, average rank, rank distribution, win rate, Borda points, light/dark preference, preview-mode breakdown, vote velocity, and a recent-votes table.
+
+The page is gated by `VITE_RESULTS_PASSPHRASE`. Set it in `.env.local` and on Vercel:
+
+```
+VITE_RESULTS_PASSPHRASE=your-shared-secret
+```
+
+For the page to read votes, the `votes` table needs a `SELECT` policy for the anon role (the original schema only allowed insert):
+
+```sql
+create policy "anon can read votes for results page"
+  on votes for select to anon using (true);
+```
+
+> **Soft gating only.** `VITE_*` env vars and the anon Supabase key are both shipped in the client bundle. The passphrase + RLS combo is enough friction for an internal review, but anyone with browser dev tools could bypass it. For stronger protection, move the aggregation behind a Vercel Function or a Postgres RPC with a server-side secret.
+
 ### Deploy
 
-`vercel.json` already rewrites all paths to `/` so React Router handles them. On Vercel, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the project's environment variables and deploy.
+`vercel.json` already rewrites all paths to `/` so React Router handles them. On Vercel, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_RESULTS_PASSPHRASE` in the project's environment variables and deploy.
 
 ## How to evaluate the designs (internal)
 
