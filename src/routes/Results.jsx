@@ -24,11 +24,12 @@ const MONO_FONT = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 const UNLOCK_KEY = 'pragma:results:unlocked';
 
 // Mode-independent semantic colors for "Claro" / "Oscuro" / "Desconocido".
-// Picked so each is readable on both light and dark surfaces and so the
-// semantics (sun vs. moon) survive a page theme toggle.
-const MODE_CLARO = '#F59E0B';        // amber — sun
-const MODE_OSCURO = '#7C3AED';       // violet — night
-const MODE_DESCONOCIDO = '#9CA3AF';  // neutral gray
+// Off-white for Claro and mid-grey for Oscuro — they stay correctly ordered
+// regardless of the page theme. Claro gets a subtle stroke at render time so
+// it stays visible against the white surface in light mode.
+const MODE_CLARO = '#F5F5F4';        // off-white
+const MODE_OSCURO = '#71717A';       // mid grey
+const MODE_DESCONOCIDO = '#A8A29E';  // warm neutral gray, distinct from both
 
 function paletteFill(p, scheme) {
   const variant = p[scheme] ?? p.light;
@@ -761,7 +762,7 @@ function DashboardContent({ votes, t, scheme }) {
               >
                 {[dark.dark, dark.light, dark.unknown].map((_, i) => {
                   const colors = [MODE_OSCURO, MODE_CLARO, MODE_DESCONOCIDO];
-                  return <Cell key={i} fill={colors[i]} stroke={t.surface} strokeWidth={2} />;
+                  return <Cell key={i} fill={colors[i]} stroke={t.border} strokeWidth={1} />;
                 })}
               </Pie>
               <Tooltip
@@ -797,7 +798,7 @@ function DashboardContent({ votes, t, scheme }) {
                 labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: t.textSecondary }} />
-              <Bar dataKey="Claro" stackId="m" fill={MODE_CLARO} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="Claro" stackId="m" fill={MODE_CLARO} stroke={t.border} strokeWidth={1} radius={[0, 0, 0, 0]} />
               <Bar dataKey="Oscuro" stackId="m" fill={MODE_OSCURO} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ChartFrame>
