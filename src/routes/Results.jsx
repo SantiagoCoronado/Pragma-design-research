@@ -23,6 +23,13 @@ const PAGE_FONT = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
 const MONO_FONT = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 const UNLOCK_KEY = 'pragma:results:unlocked';
 
+// Mode-independent semantic colors for "Claro" / "Oscuro" / "Desconocido".
+// Picked so each is readable on both light and dark surfaces and so the
+// semantics (sun vs. moon) survive a page theme toggle.
+const MODE_CLARO = '#F59E0B';        // amber — sun
+const MODE_OSCURO = '#7C3AED';       // violet — night
+const MODE_DESCONOCIDO = '#9CA3AF';  // neutral gray
+
 function paletteFill(p, scheme) {
   const variant = p[scheme] ?? p.light;
   return variant.brand;
@@ -753,11 +760,7 @@ function DashboardContent({ votes, t, scheme }) {
                 labelLine={{ stroke: t.textMuted }}
               >
                 {[dark.dark, dark.light, dark.unknown].map((_, i) => {
-                  const colors = [
-                    scheme === 'dark' ? '#FAFAFA' : '#0E0E0E',
-                    scheme === 'dark' ? '#A1A1AA' : '#A1A1AA',
-                    scheme === 'dark' ? '#3F3F46' : '#E5E5E5',
-                  ];
+                  const colors = [MODE_OSCURO, MODE_CLARO, MODE_DESCONOCIDO];
                   return <Cell key={i} fill={colors[i]} stroke={t.surface} strokeWidth={2} />;
                 })}
               </Pie>
@@ -794,8 +797,8 @@ function DashboardContent({ votes, t, scheme }) {
                 labelStyle={{ color: t.textSecondary, fontWeight: 500 }}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: t.textSecondary }} />
-              <Bar dataKey="Claro" stackId="m" fill="#A1A1AA" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Oscuro" stackId="m" fill={scheme === 'dark' ? '#FAFAFA' : '#0E0E0E'} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Claro" stackId="m" fill={MODE_CLARO} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="Oscuro" stackId="m" fill={MODE_OSCURO} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ChartFrame>
         </Section>
