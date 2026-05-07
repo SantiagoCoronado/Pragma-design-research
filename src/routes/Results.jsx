@@ -64,6 +64,11 @@ function formatDate(ts) {
   }
 }
 
+function viewedAllPreviews(vote) {
+  const pm = vote.preview_modes ?? {};
+  return PALETTES.every((p) => pm[p.id] === 'light' || pm[p.id] === 'dark');
+}
+
 function summarize(votes) {
   const ids = PALETTES.map((p) => p.id);
   const acc = {};
@@ -504,11 +509,15 @@ function Dashboard({ t, scheme }) {
 }
 
 function DashboardContent({ votes, t, scheme }) {
-  const summary = useMemo(() => summarize(votes), [votes]);
-  const dark = useMemo(() => darkPreferenceBreakdown(votes), [votes]);
-  const previews = useMemo(() => previewModeByPalette(votes), [votes]);
-  const distOs = useMemo(() => distributionByOsMode(votes), [votes]);
-  const cumulative = useMemo(() => cumulativeOverTime(votes), [votes]);
+  const [cohort, setCohort] = useState('all');
+  const informedVotes = useMemo(() => votes.filter(viewedAllPreviews), [votes]);
+  const displayVotes = cohort === 'informed' ? informedVotes : votes;
+
+  const summary = useMemo(() => summarize(displayVotes), [displayVotes]);
+  const dark = useMemo(() => darkPreferenceBreakdown(displayVotes), [displayVotes]);
+  const previews = useMemo(() => previewModeByPalette(displayVotes), [displayVotes]);
+  const distOs = useMemo(() => distributionByOsMode(displayVotes), [displayVotes]);
+  const cumulative = useMemo(() => cumulativeOverTime(displayVotes), [displayVotes]);
 
   const ordered = useMemo(() => {
     return [...PALETTES].sort((a, b) => {
@@ -520,9 +529,9 @@ function DashboardContent({ votes, t, scheme }) {
   }, [summary]);
 
   const winner = ordered[0];
-  const totalVotes = votes.length;
+  const totalVotes = displayVotes.length;
   const darkPct = totalVotes ? Math.round((dark.dark / totalVotes) * 100) : 0;
-  const latestVote = votes.reduce((max, v) => {
+  const latestVote = displayVotes.reduce((max, v) => {
     if (!v.created_at) return max;
     const ts = new Date(v.created_at).getTime();
     return !max || ts > max ? ts : max;
@@ -530,6 +539,31 @@ function DashboardContent({ votes, t, scheme }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <CohortToggle
+        t={t}
+        cohort={cohort}
+        onChange={setCohort}
+        allCount={votes.length}
+        informedCount={informedVotes.length}
+      />
+
+      {cohort === 'informed' && displayVotes.length === 0 ? (
+        <div
+          style={{
+            marginTop: 8,
+            padding: 24,
+            border: `1px solid ${t.border}`,
+            background: t.surface,
+            borderRadius: 14,
+            color: t.textSecondary,
+            fontSize: 14,
+            textAlign: 'center',
+          }}
+        >
+          Todavía no hay votos de personas que abrieron las 3 vistas previas.
+        </div>
+      ) : (
+      <>
       <KpiStrip
         t={t}
         items={[
@@ -839,8 +873,84 @@ function DashboardContent({ votes, t, scheme }) {
       </Section>
 
       <Section t={t} title="Votos recientes" subtitle="Los últimos 10 votos registrados.">
-        <RecentVotesTable votes={votes} t={t} scheme={scheme} />
+        <RecentVotesTable votes={displayVotes} t={t} scheme={scheme} />
       </Section>
+      </>
+      )}
+    </div>
+  );
+}
+
+function CohortToggle({ t, cohort, onChange, allCount, informedCount }) {
+  const informedDisabled = informedCount === 0;
+  const buttons = [
+    { key: 'all', label: 'Todos', count: allCount, disabled: false },
+    { key: 'informed', label: 'Informados', count: informedCount, disabled: informedDisabled },
+  ];
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
+      <div
+        role="tablist"
+        aria-label="Filtro de cohorte"
+        style={{
+          display: 'inline-flex',
+          background: t.surface,
+          border: `1px solid ${t.border}`,
+          borderRadius: 999,
+          padding: 4,
+          gap: 4,
+        }}
+      >
+        {buttons.map((b) => {
+          const active = cohort === b.key;
+          return (
+            <button
+              key={b.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              disabled={b.disabled}
+              onClick={() => onChange(b.key)}
+              style={{
+                border: 'none',
+                background: active ? t.submitBg : 'transparent',
+                color: b.disabled ? t.textMuted : active ? t.submitText : t.textSecondary,
+                fontFamily: PAGE_FONT,
+                fontSize: 13,
+                fontWeight: active ? 600 : 500,
+                padding: '6px 14px',
+                borderRadius: 999,
+                cursor: b.disabled ? 'not-allowed' : 'pointer',
+                opacity: b.disabled ? 0.5 : 1,
+              }}
+            >
+              {b.label}
+              <span
+                style={{
+                  fontFamily: MONO_FONT,
+                  fontSize: 11,
+                  marginLeft: 8,
+                  color: active ? t.submitText : t.textMuted,
+                }}
+              >
+                {b.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {cohort === 'informed' && (
+        <span style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.4 }}>
+          Solo votos donde se abrió la vista previa de las 3 paletas.
+        </span>
+      )}
     </div>
   );
 }
